@@ -1,0 +1,50 @@
+name: SemaFore - Audit Security Alert
+
+on:
+  repository_dispatch:
+    types: [security_alert]
+
+permissions: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - id: params
+        name: Build bounded audit metadata
+        shell: bash
+        env:
+          ALERT_ID: ${{ github.event.client_payload.alert_id }}
+          ALERT_SEVERITY: ${{ github.event.client_payload.severity }}
+          ALERT_SOURCE: ${{ github.event.client_payload.source }}
+          ALERT_URL: ${{ github.event.client_payload.alert_url }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          params="$(jq -cn \
+            --arg run_id "$RUN_ID" \
+            --arg repo "$REPOSITORY" \
+            --arg occurred_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --arg alert_id "$ALERT_ID" \
+            --arg severity "$ALERT_SEVERITY" \
+            --arg source "$ALERT_SOURCE" \
+            --arg alert_url "$ALERT_URL" \
+            '{
+              event_kind: "security.alert",
+              github_context: {run_id: $run_id, repo: $repo},
+              occurred_at: $occurred_at,
+              metadata: {
+                alert_id: $alert_id,
+                severity: $severity,
+                source: $source,
+                alert_url: $alert_url
+              }
+            }')"
+          echo "json=$params" >> "$GITHUB_OUTPUT"
+
+      - uses: Attomus/semafore-github-action@v1
+        with:
+          token: ${{ secrets.SEMAFORE_TOKEN }}
+          mode: execute
+          action: audit_event
+          params: ${{ steps.params.outputs.json }}

@@ -1,0 +1,23 @@
+name: SemaFore - Notify on Deployment
+
+on:
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Attomus/semafore-github-action@v1
+        with:
+          token: ${{ secrets.SEMAFORE_TOKEN }}
+          device_key: ${{ secrets.SEMAFORE_DEVICE_KEY }}
+          mode: notify
+          target: org
+          template: >-
+            Deployment ${{ github.event.workflow_run.conclusion }} on
+            ${{ github.event.workflow_run.head_branch }}
+            (${{ github.event.workflow_run.head_sha }})
