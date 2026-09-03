@@ -1,0 +1,22 @@
+name: SemaFore - Notify on Release
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Attomus/semafore-github-action@v1
+        with:
+          token: ${{ secrets.SEMAFORE_TOKEN }}
+          device_key: ${{ secrets.SEMAFORE_DEVICE_KEY }}
+          mode: notify
+          target: org
+          template: >-
+            Release ${{ github.event.release.tag_name }} published:
+            ${{ github.event.release.name }}
+            ${{ github.event.release.html_url }}
